@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <title>Connexion Faciale Sécurisée</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #1e88e5;
+            --danger-color: #d32f2f;
+            --background-light: #f4f4f9;
+            --background-card: #ffffff;
+            --text-dark: #333;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background-color: var(--background-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text-dark);
+        }
+
+        .login-card {
+            background-color: var(--background-card);
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        /* AMÉLIORATION A: Visuel de Cadre */
+        #video {
+            border: 5px solid var(--secondary-color);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 320px;
+            height: auto;
+            display: block;
+            margin: 0 auto 20px auto;
+            background-color: #000;
+        }
+
+        #loginButton {
+            display: none; /* Masqué pour l'Auto-Scan */
+        }
+        
+        #message {
+            margin-top: 25px;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 1em;
+            font-weight: 600;
+            min-height: 30px;
+        }
+        .msg-initial { color: var(--text-dark); }
+        .msg-success { background-color: #e8f5e9; color: var(--primary-color); border: 1px solid var(--primary-color); }
+        .msg-error { background-color: #ffebee; color: var(--danger-color); border: 1px solid var(--danger-color); }
+        .msg-loading { color: var(--secondary-color); }
+
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>Connexion par Visage</h2>
+        
+        <video id="video" width="320" height="240" autoplay></video>
+        
+        <button id="loginButton" style="display:none;">Se Connecter par Visage</button>
+        
+        <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+        
+        <div id="message" class="msg-initial">Démarrage de l'analyse... Veuillez centrer votre visage.</div>
+
+        <p style="margin-top: 30px;">
+            <a href="/signup/" style="color: var(--secondary-color); text-decoration: none;">Pas encore inscrit ?</a>
+        </p>
+    </div>
+
+    <script>
+        const video = document.getElementById("video");
+        const messageDiv = document.getElementById("message");
+        let scanInterval; 
+        let isProcessing = false;
+
+        function updateMessage(text, type = 'initial') {
+            messageDiv.textContent = text;
+            messageDiv.className = `msg-${type}`;
+        }
+
+        // Démarrer la webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            video.srcObject = stream;
+            video.onloadeddata = () => {
+                startAutoScan();
+            };
+          })
+          .catch(err => {
+            updateMessage("Erreur d'accès à la caméra. Veuillez autoriser l'accès.", 'error');
+          });
+
+        function startAutoScan() {
+            // Scan toutes les 2 secondes (2000 ms)
+            scanInterval = setInterval(captureAndLogin, 2000); 
+            updateMessage("Analyse du visage en boucle... Attente de reconnaissance.", 'initial');
+        }
+
+        function stopAutoScan() {
+            clearInterval(scanInterval);
+        }
+
+        function captureAndLogin() {
+          if (isProcessing) return; 
+
+          isProcessing = true;
+          updateMessage("Analyse du visage en cours... 🧠", 'loading');
+
+          const canvas = document.getElementById("canvas");
+          canvas.getContext("2d").drawImage(video, 0, 0, 320, 240);
+
+          // AMÉLIORATION D: Vitesse (Qualité JPEG réduite)
+          const image = canvas.toDataURL("image/jpeg", 0.6); 
+          
+          fetch("/api/login/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: image })
+          })
+          .then(res => {
+              isProcessing = false; 
+              
+              if (res.status === 401) { 
+                  return res.json().then(data => Promise.reject(data.error));
+              }
+              if (!res.ok) {
+                  return res.json().then(data => Promise.reject(data.error || "Erreur inconnue du serveur."));
+              }
+              return res.json();
+          })
+          .then(data => {
+            stopAutoScan(); 
+            updateMessage(data.success, 'success');
+            
+            // Redirection vers le dashboard après succès
+            setTimeout(() => {
+                window.location.href = "/api/dashboard/"; 
+            }, 1500);
+            
+          })
+          .catch(error => {
+            isProcessing = false; 
+            
+            if (String(error).includes("Visage inconnu")) {
+                 updateMessage("Visage non reconnu. Veuillez vous centrer. 🧐", 'initial');
+            } else {
+                 stopAutoScan();
+                 updateMessage(`Erreur critique: ${error}`, 'error');
+                 console.error('Fetch error:', error);
+            }
+          });
+        }
+    </script>
+</body>
+</html>

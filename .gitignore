@@ -1,0 +1,22 @@
+# Fichiers et dossiers Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Base de données Django
+db.sqlite3
+
+# Dossiers d'Uploads et médias locaux
+/media/
+
+# Dossiers d'Environnement de Développement
+.vscode/
+
+# Fichiers DeepFace/IA (Souvent lourds et téléchargés localement)
+.deepface/

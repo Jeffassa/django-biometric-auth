@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <title>Tableau de Bord Sécurisé - {{ username }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Variables de Style */
+    :root {
+      --primary-color: #4CAF50; /* Vert pour Succès/Thème */
+      --secondary-color: #08644b; /* Bleu pour Information */
+      --text-dark: #1b1a1a;
+      --text-light: #666;
+      --background-soft: #f4f4f9;
+      --card-bg: #ffffff;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Corps de la Page */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--background-soft);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      color: var(--text-dark);
+    }
+
+    /* Conteneur principal */
+    .dashboard-container {
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    /* En-tête (Titre et message de bienvenue) */
+    .header-section {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header-section h1 {
+      color: var(--primary-color);
+      font-size: 2.5em;
+      margin-bottom: 5px;
+    }
+
+    .header-section p {
+      color: var(--text-light);
+      font-size: 1.2em;
+    }
+
+    /* Mise en page des Cartes (Composants) */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      text-align: left;
+    }
+
+    .card h3 {
+      color: var(--secondary-color);
+      margin-top: 0;
+      font-weight: 600;
+      border-bottom: 2px solid var(--background-soft);
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+
+    /* Bouton de Déconnexion */
+    .logout-button {
+      display: inline-block;
+      padding: 12px 25px;
+      background-color: #f44336; /* Rouge */
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 500;
+      transition: background-color 0.3s ease;
+      font-size: 1.1em;
+    }
+
+    .logout-button:hover {
+      background-color: #d32f2f;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+
+    <div class="header-section">
+      <h1>Bienvenue sur votre Dashboard</h1>
+      <p>Accès sécurisé pour <strong>{{ username }}</strong>.</p>
+      <p style="color: var(--primary-color); font-weight: bold;">Authentification biométrique réussie !</p>
+    </div>
+
+    <div class="card-grid">
+      
+      <div class="card profile-card">
+        <h3>Détails du Profil</h3>
+        <p><strong>Nom d'utilisateur:</strong> {{ username }}</p>
+        <p><strong>Email:</strong> {{ email }}</p> 
+        <p><strong>Statut:</strong> <span style="color: var(--primary-color); font-weight: bold;">Actif (Connecté)</span></p>
+      </div>
+
+      <div class="card stats-card">
+        <h3>Statistiques</h3>
+        <p><strong>Dernière Connexion:</strong> Aujourd'hui (via Faciale)</p>
+        <p><strong>Profil Créé:</strong> Date inconnue</p>
+        <p><strong>Tentatives de Connexion:</strong> 3 réussies / 0 échouées</p>
+      </div>
+
+      <div class="card security-card">
+        <h3>Sécurité du Compte</h3>
+        <p>Ce compte est protégé par une **double vérification biométrique** (Faciale + Mot de passe).</p>
+        <p style="font-size: 0.9em; margin-top: 15px;">*La clé biométrique est stockée de manière sécurisée et cryptée.</p>
+      </div>
+      
+    </div>
+
+    <div style="text-align: center; margin-top: 40px;">
+      <a href="/api/logout/" class="logout-button">Se déconnecter</a> 
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Inscription Faciale</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+    input { margin: 5px 0; padding: 10px; width: 250px; border: 1px solid #ccc; }
+    button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; margin-top: 10px; }
+    #message { margin-top: 15px; font-weight: bold; }
+    video { border: 2px solid black; }
+    #preview { border: 2px solid #4CAF50; margin-top: 15px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h2>Inscription Utilisateur & Visage</h2>
+  <div id="form-container">
+    <input type="text" id="username" placeholder="Nom d'utilisateur" required><br>
+    <input type="email" id="email" placeholder="Email" required><br>
+    <input type="password" id="password" placeholder="Mot de passe" required><br><br>
+  </div>
+  
+  <video id="video" width="320" height="240" autoplay></video><br>
+  <button onclick="capture()">Capturer & S'inscrire</button>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  
+  <img id="preview" style="display:none; max-width: 320px;">
+  
+  <div id="message"></div>
+
+  <script>
+    const video = document.getElementById("video");
+    const messageDiv = document.getElementById("message");
+    const previewImg = document.getElementById("preview");
+    const formContainer = document.getElementById("form-container");
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+        messageDiv.textContent = "Webcam active. Remplissez le formulaire.";
+      })
+      .catch(err => {
+        messageDiv.textContent = "Erreur d'accès à la caméra : " + err.name;
+        messageDiv.style.color = "red";
+      });
+
+    function capture() {
+      const username = document.getElementById("username").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      if (!username || !email || !password) {
+        messageDiv.textContent = "Veuillez remplir tous les champs.";
+        messageDiv.style.color = "orange";
+        return;
+      }
+      
+      messageDiv.textContent = "Capture et envoi au serveur... ⏳";
+      messageDiv.style.color = "black";
+
+      const canvas = document.getElementById("canvas");
+      canvas.getContext("2d").drawImage(video, 0, 0, 320, 240);
+
+      // AMÉLIORATION D: Vitesse (Qualité JPEG réduite)
+      const image = canvas.toDataURL("image/jpeg", 0.6); 
+
+      fetch("/api/register/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }, 
+        body: new URLSearchParams({
+          username: username,
+          email: email,
+          password: password,
+          image: image
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // AMÉLIORATION B: Afficher la prévisualisation
+          video.style.display = 'none';
+          formContainer.style.display = 'none';
+          previewImg.src = image;
+          previewImg.style.display = 'block';
+          
+          messageDiv.textContent = `${data.success} Redirection vers la connexion...`;
+          messageDiv.style.color = "green";
+          
+          // AMÉLIORATION B: Redirection vers la page de connexion
+          setTimeout(() => {
+            window.location.href = "/login_web/"; 
+          }, 3000); 
+
+        } else {
+          messageDiv.textContent = "Échec de l'inscription : " + data.error;
+          messageDiv.style.color = "red";
+        }
+      })
+      .catch(error => {
+        messageDiv.textContent = "Erreur de communication serveur.";
+        messageDiv.style.color = "red";
+        console.error('Fetch error:', error);
+      });
+    }
+  </script>
+</body>
+</html>
