@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import dj_database_url # Import pour gérer l'URL de la base de données de production
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +21,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
+# --- CONFIGURATION DE PRODUCTION (RENDER) ---
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-mj^2l6g@5b2hlvd5lr5ib3dr_b(8!)29be6$66dm7qft!*1@2x'
+# Lit la clé secrète depuis l'environnement (obligatoire en prod) ou utilise la valeur par défaut
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY', 
+    'django-insecure-mj^2l6g@5b2hlvd5lr5ib3dr_b(8!)29be6$66dm7qft!*1@2x' # Clé par défaut pour le dev local
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Lit le mode DEBUG depuis l'environnement. Doit être 'False' en production.
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
+# Autoriser toutes les hôtes pour le déploiement Render.
+# Vous devriez restreindre à l'URL de Render une fois connue.
 ALLOWED_HOSTS = ['*']
 
 
@@ -42,8 +52,13 @@ INSTALLED_APPS = [
     'users',
 ]
 
+# --- MIDDLEWARE DE PRODUCTION ---
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    
+    # AJOUT ESSENTIEL POUR LA PROD: Whitenoise pour servir les fichiers statiques
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
+    
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -72,15 +87,27 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+# --- CONFIGURATION DE BASE DE DONNÉES (MySQL/PostgreSQL pour Render) ---
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Lit l'URL de connexion (MySQL) depuis la variable d'environnement DATABASE_URL.
+# Si la variable n'existe pas (en dev local), revient à SQLite.
+if os.environ.get('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            # Force le moteur MySQL pour les déploiements (si l'URL n'est pas claire)
+            engine='django.db.backends.mysql' 
+        )
     }
-}
+else:
+    # Configuration SQLite par défaut pour le développement local
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -114,10 +141,16 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
+# --- GESTION DES FICHIERS STATIQUES (WHITENOISE) ---
+
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+# Le dossier où Django/Whitenoise va collecter les fichiers statiques pour la production
+STATIC_ROOT = BASE_DIR / 'staticfiles' 
+# Stockage pour la compression et le cache des fichiers statiques
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
